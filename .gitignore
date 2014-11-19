@@ -1,0 +1,8 @@
+*.o
+*.so
+data/
+*.pyc
+*.gcda
+Simion\ Fields
+Waveforms
+sample\ crystal
