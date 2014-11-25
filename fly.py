@@ -25,39 +25,28 @@ class ion_flyer(object):
 
 		if sys.platform.startswith('linux'):
 			compiler = 'gcc'
-			extraopts = '-fPIC'
+			commonopts = ['-c', '-fPIC', '-Ofast', '-march=native', '-std=c99', '-fno-exceptions', '-fomit-frame-pointer']
 			extension = '.so'
 		elif sys.platform == 'win32':
+			commonopts = ['-c', '-Ofast', '-march=native', '-std=c99', '-fno-exceptions', '-fomit-frame-pointer']
 			compiler = 'C:\\MinGW\\bin\\gcc'
-			extraopts = ''
 			extension = '.dll'
 
 		libpath = localdir + target + extension
 
 		if not os.path.exists(libpath) or os.stat(localdir + target + '.c').st_mtime > os.stat(libpath).st_mtime: # we need to recompile
 			from subprocess import call
-			COMPILE = ['PROF'] # 'PROF', 'FAST', both or neither
 			# include branch prediction generation. compile final version with only -fprofile-use
-			commonopts = ['-c', extraopts, '-Ofast', '-march=native', '-std=c99', '-fno-exceptions', '-fomit-frame-pointer']
-			profcommand = [compiler, '-fprofile-arcs', '-fprofile-generate', target + '.c']
+			profcommand = [compiler, target + '.c']
 			profcommand[1:1] = commonopts
-			fastcommand = [compiler, '-fprofile-use', target + '.c']
-			fastcommand[1:1] = commonopts
 	
 			print()
 			print()
 			print('===================================')
 			print('compilation target: ', target)
-			if 'PROF' in COMPILE:
-				call(profcommand, cwd=localdir)
-				call([compiler, '-shared', '-fprofile-generate', target + '.o', '-o', target + extension], cwd=localdir)
-				print('COMPILATION: PROFILING RUN')
-			if 'FAST' in COMPILE:
-				call(fastcommand, cwd=localdir)
-				call([compiler, '-shared', target + '.o', '-o', target + extension], cwd=localdir)
-				print('COMPILATION: FAST RUN')
-			if not ('PROF' in COMPILE or 'FAST' in COMPILE):
-				print('DID NOT RECOMPILE C SOURCE')
+			call(profcommand, cwd=localdir)
+			call([compiler, '-shared', '-fprofile-generate', target + '.o', '-o', target + extension], cwd=localdir)
+			print('COMPILATION: PROFILING RUN')
 			print('===================================')
 			print()
 			print()
