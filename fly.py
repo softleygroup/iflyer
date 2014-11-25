@@ -48,7 +48,7 @@ class ion_flyer(object):
 			print('===================================')
 			print('compilation target: ', target)
 			call(profcommand, cwd=localdir)
-			call([compiler, '-shared', '-fprofile-generate', target + '.o', '-o', target + extension], cwd=localdir)
+			call([compiler, '-shared', target + '.o', '-o', target + extension], cwd=localdir)
 			print('COMPILATION: PROFILING RUN')
 			print('===================================')
 			print()
