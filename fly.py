@@ -4,8 +4,8 @@ import numpy as np
 from scipy.interpolate import UnivariateSpline
 
 import sys
-sys.path.append('/home/atreju/Documents/Uni/projects/sin eject/sim')
 import os
+sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..\\'))
 
 from simioniser.EField2D import EField2D
 from simioniser.EField3D import EField3D
