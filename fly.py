@@ -15,8 +15,6 @@ from ctypes import c_double, c_ulong, c_uint
 c_double_p = ctypes.POINTER(c_double)
 
 
-
-
 class ion_flyer(object):
 	def __init__(self, verbose=False):
 		target = 'coulomb'
@@ -60,7 +58,7 @@ class ion_flyer(object):
 
 	
 	def import_crystal(self, foldername):
-		masses = {'Calcium': 40., 'Xenon': 131.293, 'NH3': 17., 'CalciumFluoride': 59., 'Ammonia-d3' : 20, 'Ytterbium171': 171, 'Ytterbium172': 172, 'Ytterbium173': 173, 'Ytterbium174': 174}
+		masses = {'Calcium': 40., 'Xenon': 131.293, 'NH3': 17., 'CalciumFluoride': 59., 'Ammonia-d3' : 20, 'Ytterbium171': 171, 'Ytterbium172': 172, 'Ytterbium173': 173, 'Ytterbium174': 174, 'CalciumOH': 57.,'CalciumOD': 58.}
 		files = [x for x in os.listdir(foldername) if x.endswith('_pos.csv')]
 		self.pos = []
 		self.vel = []
@@ -73,7 +71,7 @@ class ion_flyer(object):
 			mass = masses[itype]
 			if len(data.shape) == 1:
 				data.resize((1, 7))
-			self.pos.extend(data[:, :3] + [-53.3e-3, 2.5e-4, 0]) # shift center coordinates
+			self.pos.extend(data[:, :3] + [-32.05e-3, 2.5e-4, 0]) # shift center coordinates
 			self.vel.extend(data[:, 3:6])
 			self.mass.extend([mass*1.6605389e-27]*data.shape[0])
 			self.nIons += data.shape[0]
@@ -131,13 +129,13 @@ class ion_flyer(object):
 	def load_waveform(self, wavefile):
 		self.wave = np.genfromtxt(wavefile, delimiter=',', skip_header=30)
 		x = np.arange(self.wave.shape[0])*2e-9
-		self.B = UnivariateSpline(x, self.wave[:, 2], s=0) # repeller, I think
-		self.C = UnivariateSpline(x, self.wave[:, 1], s=0) # extractor, I think
+		self.B = UnivariateSpline(x, self.wave[:, 2], s=0) # repeller
+		self.C = UnivariateSpline(x, self.wave[:, 1], s=0) # extractor
 	
 	def fly_ions(self, H):
 		localdir = self.localdir
-		ef1 = EField3D(localdir + 'Simion Fields/quadtrap2/quadtrap2', [1, 1, 1, 1, 0], 1./5e-4, np.array([-67, -12.75, 30.5])*1e-3)
-		ef2 = EField2D(localdir + 'Simion Fields/tof_test4/tof_test3', [-1900, 100, 0], 1./1e-3, use_accelerator = True, prune_electrodes=False)
+		ef1 = EField3D(localdir + 'Simion Fields/MeasuredTrap/measuredTrap', [0, 0, 0], 1./5e-4, np.array([-67, -13.25, 30])*1e-3, use_accelerator = True)
+		ef2 = EField2D(localdir + 'Simion Fields/MeasuredTof/measuredTof', [-1900, 100, 0], 1./1e-3, use_accelerator = True, prune_electrodes=False)
 		ef = [ef1, ef2]
 		self.ef = ef
 		
@@ -149,11 +147,8 @@ class ion_flyer(object):
 		# the first loop in Alex' code does nothing except adjust the time:
 		# t1 += T_eject - Td
 		T = 5.48999999999999999e-6
-		self.totalTime = T
-		
-		ef1 = EField3D(localdir + 'Simion Fields/test3/test3', [0, 0, 0], 1./5e-4, np.array([-67, -13.25, 30])*1e-3, use_accelerator = True)
-		ef = [ef1, ef2]
-		
+		self.totalTime = 0
+				
 		# the second loop does nothing for Td=0, so we ignore it for now.
 		# we'll just implement any hold times in ccmd, and then shouldn't need this
 		# loop, ever.
@@ -238,10 +233,10 @@ if __name__ == '__main__':
 	pr = np.sqrt(py**2 + pz**2)
 	
 	
-	ef2 = EField2D('Simion Fields/tof_test4/tof_test3', [-1900, 100, 0], 1./1e-3, use_accelerator = False)
+	ef2 = EField2D('Simion Fields/MeasuredTof/measuredTof', [-1900, 100, 0], 1./1e-3, use_accelerator = False)
 #	ef2.plotPotential()
 #	plt.plot(px, pr)
-	ef1 = EField3D('Simion Fields/test3/test3', [200, 100, 0], 1./5e-4, np.array([-67, -13.25, 30])*1e-3, use_accelerator = False)
+	ef1 = EField3D('Simion Fields/MeasuredTrap/measuredTrap', [200, 100, 0], 1./5e-4, np.array([-67, -13.25, 30])*1e-3, use_accelerator = False)
 #	ef1.plotPotential()
 #	plt.plot(px, py, 'b')
 #	plt.plot(flyer.pos[:, 0], flyer.pos[:, 1], 'x')
