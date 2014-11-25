@@ -5,7 +5,6 @@
 #include <stdio.h>
 
 #define k 2.30707735e-28
-#define __builtin_assume_aligned(x, y) x
 
 void get_coulomb_force(unsigned int nIons, double * positions, double * results)
 {
