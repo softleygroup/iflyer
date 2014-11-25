@@ -31,6 +31,9 @@ class ion_flyer(object):
 			commonopts = ['-c', '-Ofast', '-march=native', '-std=c99', '-fno-exceptions', '-fomit-frame-pointer']
 			compiler = 'C:\\MinGW\\bin\\gcc'
 			extension = '.dll'
+		else:
+			raise RuntimeError('Platform not supported!')
+
 
 		libpath = localdir + target + extension
 
@@ -50,6 +53,8 @@ class ion_flyer(object):
 			print('===================================')
 			print()
 			print()
+		elif self.verbose:
+			print('library up to date, not recompiling field accelerator')
 		
 		
 		self.coulomb = ctypes.cdll.LoadLibrary(libpath)
