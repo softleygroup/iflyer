@@ -25,14 +25,14 @@ class ion_flyer(object):
 		self.localdir = os.path.dirname(os.path.realpath(__file__)) + '/'
 		localdir = self.localdir
 
-		if not os.path.exists(localdir + target + '.so') or os.stat(localdir + target + '.c').st_mtime > os.stat(localdir + target + '.so').st_mtime: # we need to recompile
+		if not os.path.exists(localdir + target + '.dll') or os.stat(localdir + target + '.c').st_mtime > os.stat(localdir + target + '.dll').st_mtime: # we need to recompile
 			from subprocess import call
 			COMPILE = ['PROF'] # 'PROF', 'FAST', both or neither
 			# include branch prediction generation. compile final version with only -fprofile-use
-			commonopts = ['-c', '-fPIC', '-Ofast', '-march=native', '-std=c99', '-fno-exceptions', '-fomit-frame-pointer']
-			profcommand = ['gcc', '-fprofile-arcs', '-fprofile-generate', target + '.c']
+			commonopts = ['-c', '-Ofast', '-march=native', '-std=c99', '-fno-exceptions', '-fomit-frame-pointer']
+			profcommand = ['C:\\MinGW\\bin\\gcc', target + '.c']
 			profcommand[1:1] = commonopts
-			fastcommand = ['gcc', '-fprofile-use', target + '.c']
+			fastcommand = ['C:\\MinGW\\bin\\gcc', target + '.c']
 			fastcommand[1:1] = commonopts
 	
 			print()
@@ -41,11 +41,11 @@ class ion_flyer(object):
 			print('compilation target: ', target)
 			if 'PROF' in COMPILE:
 				call(profcommand, cwd=localdir)
-				call(['gcc', '-shared', '-fprofile-generate', target + '.o', '-o', target + '.so'], cwd=localdir)
+				call(['C:\\MinGW\\bin\\gcc', '-shared', target + '.o', '-o', target + '.dll'], cwd=localdir)
 				print('COMPILATION: PROFILING RUN')
 			if 'FAST' in COMPILE:
 				call(fastcommand, cwd=localdir)
-				call(['gcc', '-shared', target + '.o', '-o', target + '.so'], cwd=localdir)
+				call(['C:\\MinGW\\bin\\gcc', '-shared', target + '.o', '-o', target + '.dll'], cwd=localdir)
 				print('COMPILATION: FAST RUN')
 			if not ('PROF' in COMPILE or 'FAST' in COMPILE):
 				print('DID NOT RECOMPILE C SOURCE')
@@ -54,7 +54,7 @@ class ion_flyer(object):
 			print()
 		
 		
-		self.coulomb = ctypes.cdll.LoadLibrary(localdir + target + '.so')
+		self.coulomb = ctypes.cdll.LoadLibrary(localdir + target + '.dll')
 		self.coulomb.get_coulomb_force.argtypes = [c_uint, c_double_p, c_double_p]
 		self.coulomb.get_coulomb_force.restype = None
 
