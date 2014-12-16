@@ -5,7 +5,8 @@ from scipy.interpolate import UnivariateSpline
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..'))
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '\\..\\')
+
 
 from simioniser.EField2D import EField2D
 from simioniser.EField3D import EField3D
@@ -13,6 +14,8 @@ from simioniser.EField3D import EField3D
 import ctypes
 from ctypes import c_double, c_ulong, c_uint
 c_double_p = ctypes.POINTER(c_double)
+
+
 
 
 class ion_flyer(object):
@@ -23,44 +26,38 @@ class ion_flyer(object):
 		self.localdir = os.path.dirname(os.path.realpath(__file__)) + '/'
 		localdir = self.localdir
 
-		if sys.platform.startswith('linux'):
-			compiler = 'gcc'
-			commonopts = ['-c', '-fPIC', '-Ofast', '-march=native', '-std=c99', '-fno-exceptions', '-fomit-frame-pointer']
-			extension = '.so'
-		elif sys.platform == 'win32':
-			commonopts = ['-c', '-Ofast', '-march=native', '-std=c99', '-fno-exceptions', '-fomit-frame-pointer']
-			compiler = 'C:\\MinGW\\bin\\gcc'
-			extension = '.dll'
-		else:
-			raise RuntimeError('Platform not supported!')
-
-
-		libpath = localdir + target + extension
-
-		if not os.path.exists(libpath) or os.stat(localdir + target + '.c').st_mtime > os.stat(libpath).st_mtime: # we need to recompile
+		if not os.path.exists(localdir + target + '.dll') or os.stat(localdir + target + '.c').st_mtime > os.stat(localdir + target + '.dll').st_mtime: # we need to recompile
 			from subprocess import call
+			COMPILE = ['PROF'] # 'PROF', 'FAST', both or neither
 			# include branch prediction generation. compile final version with only -fprofile-use
-			profcommand = [compiler, target + '.c']
+			commonopts = ['-c', '-O3',  '-std=c99', '-fno-exceptions', '-fomit-frame-pointer']
+			profcommand = ['C:\\MinGW\\bin\\gcc', target + '.c']
 			profcommand[1:1] = commonopts
+			fastcommand = ['C:\\MinGW\\bin\\gcc', '-fprofile-use', target + '.c']
+			fastcommand[1:1] = commonopts
 	
 			print()
 			print()
 			print('===================================')
 			print('compilation target: ', target)
-			call(profcommand, cwd=localdir)
-			call([compiler, '-shared', '-fprofile-generate', target + '.o', '-o', target + extension], cwd=localdir)
-			print('COMPILATION: PROFILING RUN')
+			if 'PROF' in COMPILE:
+				call(profcommand, cwd=localdir)
+				call(['C:\\MinGW\\bin\\gcc', '-shared', '-fprofile-generate', target + '.o', '-o', target + '.dll'], cwd=localdir)
+				print('COMPILATION: PROFILING RUN')
+			if 'FAST' in COMPILE:
+				call(fastcommand, cwd=localdir)
+				call(['C:\\MinGW\\bin\\gcc', '-shared', target + '.o', '-o', target + '.dll'], cwd=localdir)
+				print('COMPILATION: FAST RUN')
+			if not ('PROF' in COMPILE or 'FAST' in COMPILE):
+				print('DID NOT RECOMPILE C SOURCE')
 			print('===================================')
 			print()
 			print()
-		elif self.verbose:
-			print('library up to date, not recompiling field accelerator')
 		
 		
-		self.coulomb = ctypes.cdll.LoadLibrary(libpath)
+		self.coulomb = ctypes.cdll.LoadLibrary(localdir + target + '.dll')
 		self.coulomb.get_coulomb_force.argtypes = [c_uint, c_double_p, c_double_p]
 		self.coulomb.get_coulomb_force.restype = None
-
 	
 	def import_crystal(self, foldername):
 		masses = {'Calcium': 40., 'Xenon': 131.293, 'NH3': 17., 'CalciumFluoride': 59., 'Ammonia-d3' : 20, 'Ytterbium171': 171, 'Ytterbium172': 172, 'Ytterbium173': 173, 'Ytterbium174': 174, 'CalciumOH': 57.,'CalciumOD': 58.}
@@ -76,7 +73,7 @@ class ion_flyer(object):
 			mass = masses[itype]
 			if len(data.shape) == 1:
 				data.resize((1, 7))
-			self.pos.extend(data[:, :3] + [-32.05e-3, 2.5e-4, 0]) # shift center coordinates
+			self.pos.extend(data[:, :3] + np.array([-85, 0, 0])*15.82e-3) # [-32.05e-3, 2.5e-4, 0]) # shift center coordinates
 			self.vel.extend(data[:, 3:6])
 			self.mass.extend([mass*1.6605389e-27]*data.shape[0])
 			self.nIons += data.shape[0]
@@ -107,7 +104,6 @@ class ion_flyer(object):
 		self.coulomb.get_coulomb_force(pos.shape[0], pos.ctypes.data_as(c_double_p), fm.ctypes.data_as(c_double_p))
 		
 		return q*de/mass + fm/mass
-		
 	
 	def coulomb_force(self, pos):
 		k = 2.30707735e-28
@@ -139,8 +135,8 @@ class ion_flyer(object):
 	
 	def fly_ions(self, H):
 		localdir = self.localdir
-		ef1 = EField3D(localdir + 'Simion Fields/MeasuredTrap/measuredTrap', [0, 0, 0], 1./5e-4, np.array([-67, -13.25, 30])*1e-3, use_accelerator = True)
-		ef2 = EField2D(localdir + 'Simion Fields/MeasuredTof/measuredTof', [-1900, 100, 0], 1./1e-3, use_accelerator = True, prune_electrodes=False)
+		ef1 = EField3D(localdir + 'Simion Fields/StarkTrap/starkTrap', [0, 0, 0], 1./15.82e-3, np.array([-2123., -428., -950.])*1e-3, use_accelerator = True)
+		ef2 = EField2D(localdir + 'Simion Fields/StarkTof/starkTof', [-1900, 0], 1./3.95e-3, use_accelerator = True, prune_electrodes=True)
 		ef = [ef1, ef2]
 		self.ef = ef
 		
@@ -169,8 +165,8 @@ class ion_flyer(object):
 		while True:
 			step += 1
 			
-			V1 = self.B(T) # repeller
-			V2 = self.C(T) # extractor
+			V1 = self.B(T)*305 # repeller
+			V2 = self.C(T)*176 # extractor		
 			
 			ef1.fastAdjust(0, V1)
 			ef1.fastAdjust(1, V2)
@@ -238,10 +234,10 @@ if __name__ == '__main__':
 	pr = np.sqrt(py**2 + pz**2)
 	
 	
-	ef2 = EField2D('Simion Fields/MeasuredTof/measuredTof', [-1900, 100, 0], 1./1e-3, use_accelerator = False)
+	ef2 = EField2D('Simion Fields/StarkTof/starkTof', [-1900, 500], 1./3.95e-3, use_accelerator = False)
 #	ef2.plotPotential()
 #	plt.plot(px, pr)
-	ef1 = EField3D('Simion Fields/MeasuredTrap/measuredTrap', [200, 100, 0], 1./5e-4, np.array([-67, -13.25, 30])*1e-3, use_accelerator = False)
+	ef1 = EField3D('Simion Fields/StarkTrap/starkTrap', [200, 100, 0], 1./15.82e-3, np.array([-2123., -428., -950.])*1e-3, use_accelerator = False)
 #	ef1.plotPotential()
 #	plt.plot(px, py, 'b')
 #	plt.plot(flyer.pos[:, 0], flyer.pos[:, 1], 'x')
@@ -269,7 +265,7 @@ if __name__ == '__main__':
 	for i, t in enumerate(types):
 		ind = np.where(flyer.types == t)[0]
 		r = np.sqrt(flyer.pos[ind, 1]**2 + flyer.pos[ind, 2]**2)
-		count = len(np.where((flyer.pos[ind, 0] > 0.23) & (r < 0.005))[0])
+		count = len(np.where((flyer.pos[ind, 0] > 0.23) & (r < 0.05))[0])
 		print(count, 'ions of type', t, 'detected on MCP')
 		ax0.plot(px[:, ind], pz[:, ind], styles[i])
 		ax1.plot(px[:, ind], py[:, ind], styles[i])
@@ -278,4 +274,9 @@ if __name__ == '__main__':
 	ax1.set_aspect('equal', 'datalim')
 
 	plt.show()
+
+
+	
+
+
 	
