@@ -26,15 +26,25 @@ class ion_flyer(object):
 		self.localdir = os.path.dirname(os.path.realpath(__file__)) + '/'
 		localdir = self.localdir
 
-		if not os.path.exists(localdir + target + '.dll') or os.stat(localdir + target + '.c').st_mtime > os.stat(localdir + target + '.dll').st_mtime: # we need to recompile
+		if sys.platform.startswith('linux'):
+			compiler = 'gcc'
+			commonopts = ['-c', '-fPIC', '-Ofast', '-march=native', '-std=c99', '-fno-exceptions', '-fomit-frame-pointer']
+			extension = '.so'
+		elif sys.platform == 'win32':
+			commonopts = ['-c', '-Ofast', '-march=native', '-std=c99', '-fno-exceptions', '-fomit-frame-pointer']
+			compiler = 'C:\\MinGW\\bin\\gcc'
+			extension = '.dll'
+		else:
+			raise RuntimeError('Platform not supported!')
+
+
+		libpath = localdir + target + extension
+
+		if not os.path.exists(libpath) or os.stat(localdir + target + '.c').st_mtime > os.stat(libpath).st_mtime: # we need to recompile
 			from subprocess import call
-			COMPILE = ['PROF'] # 'PROF', 'FAST', both or neither
 			# include branch prediction generation. compile final version with only -fprofile-use
-			commonopts = ['-c', '-O3',  '-std=c99', '-fno-exceptions', '-fomit-frame-pointer']
-			profcommand = ['C:\\MinGW\\bin\\gcc', target + '.c']
+			profcommand = [compiler, target + '.c']
 			profcommand[1:1] = commonopts
-			fastcommand = ['C:\\MinGW\\bin\\gcc', '-fprofile-use', target + '.c']
-			fastcommand[1:1] = commonopts
 	
 			print()
 			print()
@@ -46,12 +56,14 @@ class ion_flyer(object):
 			print('===================================')
 			print()
 			print()
+		elif self.verbose:
+			print('library up to date, not recompiling field accelerator')
 		
-		
-		self.coulomb = ctypes.cdll.LoadLibrary(localdir + target + '.dll')
+		self.coulomb = ctypes.cdll.LoadLibrary(libpath)
 		self.coulomb.get_coulomb_force.argtypes = [c_uint, c_double_p, c_double_p]
 		self.coulomb.get_coulomb_force.restype = None
-	
+
+		
 	def import_crystal(self, foldername):
 		masses = {'Calcium': 40., 'Xenon': 131.293, 'NH3': 17., 'CalciumFluoride': 59., 'Ammonia-d3' : 20, 'Ytterbium171': 171, 'Ytterbium172': 172, 'Ytterbium173': 173, 'Ytterbium174': 174, 'CalciumOH': 57.,'CalciumOD': 58.}
 		files = [x for x in os.listdir(foldername) if x.endswith('_pos.csv')]
