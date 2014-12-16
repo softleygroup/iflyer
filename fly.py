@@ -40,16 +40,9 @@ class ion_flyer(object):
 			print()
 			print('===================================')
 			print('compilation target: ', target)
-			if 'PROF' in COMPILE:
-				call(profcommand, cwd=localdir)
-				call(['C:\\MinGW\\bin\\gcc', '-shared', '-fprofile-generate', target + '.o', '-o', target + '.dll'], cwd=localdir)
-				print('COMPILATION: PROFILING RUN')
-			if 'FAST' in COMPILE:
-				call(fastcommand, cwd=localdir)
-				call(['C:\\MinGW\\bin\\gcc', '-shared', target + '.o', '-o', target + '.dll'], cwd=localdir)
-				print('COMPILATION: FAST RUN')
-			if not ('PROF' in COMPILE or 'FAST' in COMPILE):
-				print('DID NOT RECOMPILE C SOURCE')
+			call(profcommand, cwd=localdir)
+			call([compiler, '-shared', target + '.o', '-o', target + extension], cwd=localdir)
+			print('COMPILATION: PROFILING RUN')
 			print('===================================')
 			print()
 			print()
