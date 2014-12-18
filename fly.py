@@ -78,7 +78,8 @@ class ion_flyer(object):
 			mass = masses[itype]
 			if len(data.shape) == 1:
 				data.resize((1, 7))
-			self.pos.extend(data[:, :3] + np.array([-85, 0, 0])*15.82e-3) # [-32.05e-3, 2.5e-4, 0]) # shift center coordinates
+			self.pos.extend(data[:, :3] + np.array([-202, -0.02689, 0])*0.2e-3) # [-32.05e-3, 2.5e-4, 0]) # shift center coordinates
+
 			self.vel.extend(data[:, 3:6])
 			self.mass.extend([mass*1.6605389e-27]*data.shape[0])
 			self.nIons += data.shape[0]
@@ -91,7 +92,7 @@ class ion_flyer(object):
 		self.vel = np.array(self.vel)
 		self.totalTime = np.zeros(self.nIons)
 		self.types = np.array(self.types)
-		
+
 		if self.verbose: print('loaded a total of ', self.nIons, 'ions')
 	
 	def calc_acceleration(self, pos, ef, mass):
@@ -133,26 +134,32 @@ class ion_flyer(object):
 		return collision_index
 		
 	def load_waveform(self, wavefile):
-		self.wave = np.genfromtxt(wavefile, delimiter=',', skip_header=30)
-		x = np.arange(self.wave.shape[0])*2e-9
-		self.B = UnivariateSpline(x, self.wave[:, 2], s=0) # repeller
-		self.C = UnivariateSpline(x, self.wave[:, 1], s=0) # extractor
+		#self.wave = np.genfromtxt(wavefile, delimiter=',', skip_header=30)
+		#x = np.arange(self.wave.shape[0])*2e-9
+		#self.B = UnivariateSpline(x, self.wave[:, 2], s=0) # repeller
+		#self.C = UnivariateSpline(x, self.wave[:, 1], s=0) # extractor
+		                
+		wave = np.genfromtxt('./Waveforms/C22014-12-17-r100000.txt', skiprows=5, delimiter=',')
+		self.C = UnivariateSpline(wave[:, 0], wave[:, 1], s=0)
+		wave = np.genfromtxt('./Waveforms/C22014-12-17-e100000.txt', skiprows=5, delimiter=',')
+		self.B = UnivariateSpline(wave[:, 0], wave[:, 1], s=0)
+	
 	
 	def fly_ions(self, H):
 		localdir = self.localdir
-		ef1 = EField3D(localdir + 'Simion Fields/StarkTrap/starkTrap', [0, 0, 0], 1./15.82e-3, np.array([-2123., -428., -950.])*1e-3, use_accelerator = True)
-		ef2 = EField2D(localdir + 'Simion Fields/StarkTof/starkTof', [-1900, 0], 1./3.95e-3, use_accelerator = True, prune_electrodes=True)
+		ef1 = EField3D(localdir + 'Simion Fields/StarkTrap4/StarkTrap4', [0, 0], 1./2.e-4, np.array([-402.5, -68., -125.5])*2e-4, use_accelerator = True)
+		ef2 = EField2D(localdir + 'Simion Fields/StarkTof/starkTof', [-1900, 0], 1./1.e-4, use_accelerator = True, prune_electrodes=True)
 		ef = [ef1, ef2]
 		self.ef = ef
 		
 		Td = 0 # some weird time delay, true for WASC0628
-		T_eject = (self.wave[:, 2].argmax() + 1)*2e-9-2*H # position of ejection voltage maximum, coincides with the flank of ejection pulse
 		
 		acc = self.calc_acceleration(self.pos, ef, self.mass)
 		
 		# the first loop in Alex' code does nothing except adjust the time:
 		# t1 += T_eject - Td
-		T = 5.48999999999999999e-6
+		# T = 5.48999999999999999e-6
+		T = 1.258e-6 # offset between scope trigger and extraction pulse
 		self.totalTime = 0
 				
 		# the second loop does nothing for Td=0, so we ignore it for now.
@@ -170,8 +177,8 @@ class ion_flyer(object):
 		while True:
 			step += 1
 			
-			V1 = self.B(T)*305 # repeller
-			V2 = self.C(T)*176 # extractor		
+			V1 = 100*self.B(T) # repeller
+			V2 = 100*self.C(T) # extractor
 			
 			ef1.fastAdjust(0, V1)
 			ef1.fastAdjust(1, V2)
@@ -223,7 +230,7 @@ if __name__ == '__main__':
 
 	crystdat = 'sample crystal/'
 	wavefile = 'Waveforms/WAVE/WASC0628.CSV'
-	H = 1.e-8
+	H = 5.e-9
 	runs = 1
 	
 	flyer = ion_flyer(verbose=True)
@@ -239,10 +246,10 @@ if __name__ == '__main__':
 	pr = np.sqrt(py**2 + pz**2)
 	
 	
-	ef2 = EField2D('Simion Fields/StarkTof/starkTof', [-1900, 500], 1./3.95e-3, use_accelerator = False)
+	ef2 = EField2D('Simion Fields/StarkTof/starkTof', [-1900, 500], 1./1.e-4, use_accelerator = False)
 #	ef2.plotPotential()
 #	plt.plot(px, pr)
-	ef1 = EField3D('Simion Fields/StarkTrap/starkTrap', [200, 100, 0], 1./15.82e-3, np.array([-2123., -428., -950.])*1e-3, use_accelerator = False)
+	ef1 = EField3D('Simion Fields/StarkTrap4/StarkTrap4', [300, 100], 1./2.e-4, np.array([-402.5, -68., -125.5])*2e-4, use_accelerator = False)
 #	ef1.plotPotential()
 #	plt.plot(px, py, 'b')
 #	plt.plot(flyer.pos[:, 0], flyer.pos[:, 1], 'x')
@@ -270,7 +277,7 @@ if __name__ == '__main__':
 	for i, t in enumerate(types):
 		ind = np.where(flyer.types == t)[0]
 		r = np.sqrt(flyer.pos[ind, 1]**2 + flyer.pos[ind, 2]**2)
-		count = len(np.where((flyer.pos[ind, 0] > 0.23) & (r < 0.05))[0])
+		count = len(np.where((flyer.pos[ind, 0] > 0.12) & (r < 0.05))[0])
 		print(count, 'ions of type', t, 'detected on MCP')
 		ax0.plot(px[:, ind], pz[:, ind], styles[i])
 		ax1.plot(px[:, ind], py[:, ind], styles[i])
