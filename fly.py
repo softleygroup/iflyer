@@ -150,6 +150,8 @@ class ion_flyer(object):
 		wave = np.genfromtxt('./Waveforms/e-el3.csv', skiprows=10, delimiter=',') #extractor negative phase, electrode 3
 		self.C2 = UnivariateSpline(wave[:, 0], wave[:, 1], s=0)
 
+		self.tmax = wave[-1, 0] # maximum time for which spline interpolations are valid
+
 		#import pdb; pdb.set_trace()
 		#reading in 2 waveforms
 		#wave = np.genfromtxt('./Waveforms/C22014-12-17-r100000.txt', skiprows=5, delimiter=',')
@@ -193,10 +195,16 @@ class ion_flyer(object):
 		while True:
 			step += 1
 		# the programm can't read out the amplitude out of the waveform files properly, one has to set the values manually 
-			V1 = 100*self.B1(T)
-			V2 = 100*self.C2(T)
-			V3 = 100*self.B2(T)
-			V4 = 100*self.C1(T)
+			if T < self.tmax:
+				V1 = 100*self.B1(T)
+				V2 = 100*self.C2(T)
+				V3 = 100*self.B2(T)
+				V4 = 100*self.C1(T)
+			else:
+				V1 = 0
+				V2 = 0
+				V3 = 0
+				V4 = 0
 			
 		#	print (ef1)
 		#fast adjustment for all 4 electrodes
