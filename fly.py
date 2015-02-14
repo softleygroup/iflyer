@@ -5,7 +5,7 @@ from scipy.interpolate import UnivariateSpline
 
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '\\..\\')
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 
 
 from simioniser.EField2D import EField2D
@@ -187,6 +187,7 @@ class ion_flyer(object):
 		self.plotpos_x = []
 		self.plotpos_y = []
 		self.plotpos_z = []
+		self.plottime = []
 		
 		step = 0
 		while True:
@@ -229,6 +230,7 @@ class ion_flyer(object):
 					pos_f[i, :] += np.array([1, 0, 0])*1e-7
 				elif pos_f[i, 0] > ef2.xmax and self.pos[i, 0] < ef2.xmax and self.vel[i, :].any() and acc[i , :].any():
 					print(i)
+					print(self.types[i])
 					print (self.pos[i, :])
 					print (pos_f[i, :])
 					print (ef2.xmax)
@@ -252,6 +254,7 @@ class ion_flyer(object):
 				self.plotpos_x.append(self.pos[:, 0])
 				self.plotpos_y.append(self.pos[:, 1])
 				self.plotpos_z.append(self.pos[:, 2])
+				self.plottime.append(T)
 				if self.verbose: print('current time: ', T)
 			if not self.vel.any() or T > 5e-5:
 				break
