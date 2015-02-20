@@ -141,13 +141,13 @@ class ion_flyer(object):
 		#self.B = UnivariateSpline(x, self.wave[:, 2], s=0) # repeller
 		#self.C = UnivariateSpline(x, self.wave[:, 1], s=0) # extractor
 		                
-		wave = np.genfromtxt('./Waveforms/r-el4.csv', skiprows=10, delimiter=',') #repeller negative phase, electrode 4
+		wave = np.genfromtxt('./Waveforms/r-el4.txt', skiprows=10, delimiter='\t') #repeller negative phase, electrode 4
 		self.B1 = UnivariateSpline(wave[:, 0], wave[:, 1], s=0)
-		wave = np.genfromtxt('./Waveforms/r+el2.csv', skiprows=10, delimiter=',') #repeller positive phase, electrode 2
+		wave = np.genfromtxt('./Waveforms/r+el2.txt', skiprows=10, delimiter='\t') #repeller positive phase, electrode 2
 		self.B2 = UnivariateSpline(wave[:, 0], wave[:, 1], s=0)
-		wave = np.genfromtxt('./Waveforms/e+el1.csv', skiprows=10, delimiter=',') #extractor positive phase, electrode 1
+		wave = np.genfromtxt('./Waveforms/e+el1.txt', skiprows=10, delimiter='\t') #extractor positive phase, electrode 1
 		self.C1 = UnivariateSpline(wave[:, 0], wave[:, 1], s=0)
-		wave = np.genfromtxt('./Waveforms/e-el3.csv', skiprows=10, delimiter=',') #extractor negative phase, electrode 3
+		wave = np.genfromtxt('./Waveforms/e-el3.txt', skiprows=10, delimiter='\t') #extractor negative phase, electrode 3
 		self.C2 = UnivariateSpline(wave[:, 0], wave[:, 1], s=0)
 
 		self.tmax = wave[-1, 0] # maximum time for which spline interpolations are valid
@@ -201,10 +201,10 @@ class ion_flyer(object):
 				V3 = 100*self.B2(T)
 				V4 = 100*self.C1(T)
 			else:
-				V1 = 0
-				V2 = 0
-				V3 = 0
-				V4 = 0
+				V1 = 100*self.B1(self.tmax)
+				V2 = 100*self.B1(self.tmax)
+				V3 = 100*self.B1(self.tmax)
+				V4 = 100*self.B1(self.tmax)
 			
 		#	print (ef1)
 		#fast adjustment for all 4 electrodes
