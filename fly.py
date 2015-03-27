@@ -65,7 +65,7 @@ class ion_flyer(object):
 
 		
 	def import_crystal(self, foldername):
-		masses = {'Calcium': 40., 'Xenon': 131.293, 'NH3': 17., 'CalciumFluoride': 59., 'Ammonia-d3' : 20, 'Ytterbium171': 171, 'Ytterbium172': 172, 'Ytterbium173': 173, 'Ytterbium174': 174, 'CalciumOH': 57.,'CalciumOD': 58.}
+		masses = {'Calcium': 40., 'Pump1': 19., 'Pump2': 29., 'Pump3': 55., 'Pump4': 57.,'Xenon': 131.293, 'NH3': 17., 'CalciumFluoride': 59., 'Ammonia-d3' : 20, 'Ytterbium171': 171, 'Ytterbium172': 172, 'Ytterbium173': 173, 'Ytterbium174': 174, 'CalciumOH': 57.,'CalciumOD': 58.}
 		files = [x for x in os.listdir(foldername) if x.endswith('_pos.csv')]
 		self.pos = []
 		self.vel = []
@@ -73,7 +73,7 @@ class ion_flyer(object):
 		self.nIons = 0
 		self.types = []
 		for f in files:
-			data = np.genfromtxt(foldername + f, skip_header=0, delimiter=',')
+			data = np.genfromtxt(foldername + f, skip_header=1, delimiter=',')
 			itype = f[:-8]
 			mass = masses[itype]
 			if len(data.shape) == 1:
