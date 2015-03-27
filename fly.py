@@ -5,7 +5,7 @@ from scipy.interpolate import UnivariateSpline
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '\\..\\')
 
 
 from simioniser.EField2D import EField2D
@@ -65,7 +65,7 @@ class ion_flyer(object):
 
 		
 	def import_crystal(self, foldername):
-		masses = {'Calcium': 40., 'Pump1': 19., 'Pump2': 29., 'Pump3': 55., 'Pump4': 57.,'Xenon': 131.293, 'NH3': 17., 'CalciumFluoride': 59., 'Ammonia-d3' : 20, 'Ytterbium171': 171, 'Ytterbium172': 172, 'Ytterbium173': 173, 'Ytterbium174': 174, 'CalciumOH': 57.,'CalciumOD': 58.}
+		masses = {'Calcium': 40.,'Xenon': 130.0,'Pump1': 28.3,'Pump2': 30.2,'Xenon128': 127.9,'Xenon129': 128.9,'Xenon130': 129.9,'Xenon131': 130.9,'Xenon132': 131.9,'Xenon134': 133.9,'Xenon136': 135.9,'Calcium2': 42., 'Calcium3': 44.,'NH3': 17., 'CalciumFluoride': 59., 'Ammonia-d3' : 20, 'Ytterbium171': 171, 'Ytterbium172': 172, 'Ytterbium173': 173, 'Ytterbium174': 174, 'CalciumOH': 57.,'CalciumOD': 58.}
 		files = [x for x in os.listdir(foldername) if x.endswith('_pos.csv')]
 		self.pos = []
 		self.vel = []
@@ -83,6 +83,7 @@ class ion_flyer(object):
 			self.vel.extend(data[:, 3:6])
 			self.mass.extend([mass*1.6605389e-27]*data.shape[0])
 			self.nIons += data.shape[0]
+			#self.nIonsMy.append(data.shape[0])
 			self.types.extend([itype]*data.shape[0])
 			
 			if self.verbose: print('loading', data.shape[0], 'ions from', f)
@@ -141,16 +142,14 @@ class ion_flyer(object):
 		#self.B = UnivariateSpline(x, self.wave[:, 2], s=0) # repeller
 		#self.C = UnivariateSpline(x, self.wave[:, 1], s=0) # extractor
 		                
-		wave = np.genfromtxt('./Waveforms/r-el4.txt', skiprows=10, delimiter='\t') #repeller negative phase, electrode 4
+		wave = np.genfromtxt('./Waveforms/r-el4.txt', skiprows=1, delimiter='\t') #repeller negative phase, electrode 4
 		self.B1 = UnivariateSpline(wave[:, 0], wave[:, 1], s=0)
-		wave = np.genfromtxt('./Waveforms/r+el2.txt', skiprows=10, delimiter='\t') #repeller positive phase, electrode 2
+		wave = np.genfromtxt('./Waveforms/r+el2.txt', skiprows=1, delimiter='\t') #repeller positive phase, electrode 2
 		self.B2 = UnivariateSpline(wave[:, 0], wave[:, 1], s=0)
 		wave = np.genfromtxt('./Waveforms/e+el1.txt', skiprows=10, delimiter='\t') #extractor positive phase, electrode 1
 		self.C1 = UnivariateSpline(wave[:, 0], wave[:, 1], s=0)
 		wave = np.genfromtxt('./Waveforms/e-el3.txt', skiprows=10, delimiter='\t') #extractor negative phase, electrode 3
 		self.C2 = UnivariateSpline(wave[:, 0], wave[:, 1], s=0)
-
-		self.tmax = wave[-1, 0] # maximum time for which spline interpolations are valid
 
 		#import pdb; pdb.set_trace()
 		#reading in 2 waveforms
@@ -177,7 +176,7 @@ class ion_flyer(object):
 		# t1 += T_eject - Td
 		# T = 5.48999999999999999e-6
 		
-		T = 1.258e-6 # offset between scope trigger and extraction pulse (for sinusoidal ejection with damping)
+		T = 2.251e-6 #1.258e-6 # offset between scope trigger and extraction pulse (for sinusoidal ejection with damping)
 		self.totalTime = 0
 				
 		# the second loop does nothing for Td=0, so we ignore it for now.
@@ -189,22 +188,15 @@ class ion_flyer(object):
 		self.plotpos_x = []
 		self.plotpos_y = []
 		self.plotpos_z = []
-		self.plottime = []
 		
 		step = 0
 		while True:
 			step += 1
 		# the programm can't read out the amplitude out of the waveform files properly, one has to set the values manually 
-			if T < self.tmax:
-				V1 = 100*self.B1(T)
-				V2 = 100*self.C2(T)
-				V3 = 100*self.B2(T)
-				V4 = 100*self.C1(T)
-			else:
-				V1 = 100*self.B1(self.tmax)
-				V2 = 100*self.B1(self.tmax)
-				V3 = 100*self.B1(self.tmax)
-				V4 = 100*self.B1(self.tmax)
+			V1 = 100*self.B1(T)
+			V2 = 100*self.C2(T)
+			V3 = 100*self.B2(T)
+			V4 = 100*self.C1(T)
 			
 		#	print (ef1)
 		#fast adjustment for all 4 electrodes
@@ -238,7 +230,6 @@ class ion_flyer(object):
 					pos_f[i, :] += np.array([1, 0, 0])*1e-7
 				elif pos_f[i, 0] > ef2.xmax and self.pos[i, 0] < ef2.xmax and self.vel[i, :].any() and acc[i , :].any():
 					print(i)
-					print(self.types[i])
 					print (self.pos[i, :])
 					print (pos_f[i, :])
 					print (ef2.xmax)
@@ -262,7 +253,6 @@ class ion_flyer(object):
 				self.plotpos_x.append(self.pos[:, 0])
 				self.plotpos_y.append(self.pos[:, 1])
 				self.plotpos_z.append(self.pos[:, 2])
-				self.plottime.append(T)
 				if self.verbose: print('current time: ', T)
 			if not self.vel.any() or T > 5e-5:
 				break
@@ -279,7 +269,8 @@ if __name__ == '__main__':
 	wavefile = 'Waveforms/WAVE/WASC0628.CSV'
 	
 	# Time step size. This must be small enough that an ion only moves by 1 Simion grid space in a single step.
-	H = 5.e-9 
+	H = 2.e-9 
+	#H = 1.e-10 
 	
 	runs = 1
 	
@@ -296,8 +287,8 @@ if __name__ == '__main__':
 	pr = np.sqrt(py**2 + pz**2)
 	
 	#these are just for plotting the trajectories
-	ef2 = EField2D('Simion Fields/StarkTof/starkTof', [-1900, 500], 1./1.e-4, use_accelerator = False)
-	ef1 = EField3D('Simion Fields/StarkTrap7/StarkTrap7', [305, 176, 305, 176], 1./2.e-4, np.array([-402.5, -68., -125.5])*2e-4, use_accelerator = False)
+	ef2 = EField2D('Simion Fields/StarkTof/starkTof', [-1900, 0], 1./1.e-4, use_accelerator = False)
+	ef1 = EField3D('Simion Fields/StarkTrap7/StarkTrap7', [220, 97, 220, 97], 1./2.e-4, np.array([-402.5, -68., -125.5])*2e-4, use_accelerator = False)
 
 #	ef2.plotPotential()
 #	plt.plot(px, pr)
@@ -331,13 +322,13 @@ if __name__ == '__main__':
 		r = np.sqrt(flyer.pos[ind, 1]**2 + flyer.pos[ind, 2]**2)
 		count = len(np.where((flyer.pos[ind, 0] > 0.12) & (r < 0.013))[0]) #0.124 is the length of the TOF tube and 0.013 is the radius of the MCPs
 		print(count, 'ions of type', t, 'detected on MCP')
+		#print(count, 'ions of type', t, 'detected on MCP')
 		ax0.plot(px[:, ind], pz[:, ind], styles[i])
 		ax1.plot(px[:, ind], py[:, ind], styles[i])
 	
 	ax0.set_aspect('equal', 'datalim')
 	ax1.set_aspect('equal', 'datalim')
 
-	# plt.show()
 
 	hist_nbins = 100
 	[hist_n, hist_bins] = np.histogram (flyer.totalTime * 1e6, hist_nbins)
